@@ -29,14 +29,12 @@
           "_internal/vm/lib/array_patch.dart",
           "_internal/vm/lib/core_patch.dart",
           "_internal/vm_shared/lib/bigint_patch.dart",
-          "_internal/vm/lib/bigint_patch_patch.dart",
           "_internal/vm_shared/lib/bool_patch.dart",
           "_internal/vm_shared/lib/date_patch.dart",
           "_internal/vm_shared/lib/integers_patch.dart",
           "_internal/vm_shared/lib/map_patch.dart",
           "_internal/vm_shared/lib/null_patch.dart",
-          "_internal/vm_shared/lib/string_buffer_patch.dart",
-          "_internal/vm_shared/lib/uri_encode_patch.dart"
+          "_internal/vm_shared/lib/string_buffer_patch.dart"
         ],
         "supported": true
       },
@@ -77,17 +75,12 @@
       "_internal": {
         "uri": "internal/internal.dart",
         "patches": [
-          "_internal/vm/lib/internal_patch.dart",
-          "_internal/vm_shared/lib/check_valid_weak_target_patch.dart"
+          "_internal/vm/lib/internal_patch.dart"
         ],
         "supported": false
       },
-      "_vm": {
-        "uri": "_vm/_vm.dart",
-        "supported": false
-      },
       "_vmservice": {
-        "uri": "vmservice/vmservice.dart",
+        "uri": "_feather_dart/vmservice_stub.dart",
         "supported": false
       },
       "concurrent": {

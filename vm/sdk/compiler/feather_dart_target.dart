@@ -61,7 +61,6 @@ class FeatherDartTarget extends VmTarget {
     'dart:math',
     'dart:mirrors',
     'dart:typed_data',
-    'dart:_vm',
     'dart:_vmservice',
     'dart:nativewrappers',
     'dart:_feather_dart',

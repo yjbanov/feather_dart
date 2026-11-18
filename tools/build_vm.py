@@ -20,7 +20,7 @@ import subprocess
 import sys
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_SDK_DIR = REPO_ROOT / "third_party" / "dart-sdk"
+DEFAULT_SDK_DIR = REPO_ROOT / "third_party" / "sdk"
 DIST_DIR = REPO_ROOT / "dist"
 VM_INCLUDE_DIR = REPO_ROOT / "vm" / "include"
 
@@ -87,33 +87,13 @@ def find_sdk_prebuilt_dart(sdk_dir: Path) -> tuple[Path, Path]:
   )
 
 
-def build_platform_dill(sdk_dir: Path) -> Path:
-  dart_bin, host_vm_dill = find_sdk_prebuilt_dart(sdk_dir)
-  out_dill = DIST_DIR / "sdk" / "feather_dart_platform_strong.dill"
-  outline_dill = DIST_DIR / "sdk" / "feather_dart_outline_strong.dill"
-  out_dill.parent.mkdir(parents=True, exist_ok=True)
-
-  pkg_config = sdk_dir / ".dart_tool" / "package_config.json"
-  cmd = [str(dart_bin)]
-  if pkg_config.exists():
-    cmd.append(f"--packages={pkg_config}")
-
-  # Uses the SDK's own `compile_platform.dart` with our registered `feather_dart`
-  # target so internal `package:front_end` APIs always match the checked-out SDK.
-  cmd.extend([
-      "pkg/front_end/tool/compile_platform.dart",
-      "--target=feather_dart",
-      "--no-defines",
-      "-Ddart.vm.product=true",
-      "dart:core",
-      "sdk/lib/libraries_feather_dart.json",
-      str(host_vm_dill),
-      str(out_dill),
-      str(outline_dill),
-  ])
-  run_cmd(cmd, sdk_dir)
-  print(f"Built FeatherDart platform kernel -> {out_dill}")
-  return out_dill
+def copy_built_platform_dill(out_dir: Path) -> None:
+  built_dill = out_dir / "feather_dart_platform_strong.dill"
+  if built_dill.exists():
+    dst = DIST_DIR / "sdk" / "feather_dart_platform_strong.dill"
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(built_dill, dst)
+    print(f"Staged FeatherDart platform kernel -> {dst}")
 
 
 def gn_and_build(
@@ -142,25 +122,24 @@ def gn_and_build(
   ]
   run_cmd(gn_cmd, sdk_dir)
 
-  build_cmd = [
-      sys.executable,
-      "tools/build.py",
-      f"--os={target_os}",
-      f"--mode={mode}",
-      f"--arch={arch}",
-      *ninja_targets,
-  ]
-  run_cmd(build_cmd, sdk_dir)
-
   if target_os == "ios_simulator":
     cap_mode = mode.capitalize()
     prefix = "xcodebuild" if host_os_name() == "macos" else "out"
-    return sdk_dir / prefix / f"{cap_mode}IOSSimulator{arch.upper()}"
-  if target_os == "ios":
+    out_dir = sdk_dir / prefix / f"{cap_mode}IOSSimulator{arch.upper()}"
+  elif target_os == "ios":
     cap_mode = mode.capitalize()
     prefix = "xcodebuild" if host_os_name() == "macos" else "out"
-    return sdk_dir / prefix / f"{cap_mode}IOS{arch.upper()}"
-  return dart_out_dir(sdk_dir, mode, arch, target_os)
+    out_dir = sdk_dir / prefix / f"{cap_mode}IOS{arch.upper()}"
+  else:
+    out_dir = dart_out_dir(sdk_dir, mode, arch, target_os)
+
+  # Invoke ninja directly rather than `tools/build.py` so `tools/build.py`
+  # does not re-run `gn.py` with default args and overwrite `--gn-args`.
+  ninja_bin = sdk_dir / "buildtools" / "ninja" / "ninja"
+  if not ninja_bin.exists():
+    ninja_bin = Path(shutil.which("ninja") or "ninja")
+  run_cmd([str(ninja_bin), "-C", str(out_dir), *ninja_targets], sdk_dir)
+  return out_dir
 
 
 def build_host(sdk_dir: Path) -> None:
@@ -174,8 +153,13 @@ def build_host(sdk_dir: Path) -> None:
       target_os="host",
       mode="product",
       arch=arch,
-      ninja_targets=["feather_dart:feather_dart_aot", "gen_snapshot"],
+      ninja_targets=[
+          "feather_dart:feather_dart_platform",
+          "feather_dart:feather_dart_aot",
+          "gen_snapshot",
+      ],
   )
+  copy_built_platform_dill(prod_out)
   shutil.copy2(prod_out / f"libfeather_dart.{ext}", host_dist / f"libfeather_dart.{ext}")
   shutil.copy2(prod_out / "gen_snapshot", host_dist / "gen_snapshot")
 
@@ -201,17 +185,31 @@ def build_android(sdk_dir: Path, archs: list[str], include_jit: bool) -> None:
     abi_dir = jni_dist / abi
     abi_dir.mkdir(parents=True, exist_ok=True)
 
+    host_gen_snapshot_target = f"clang_{host_arch()}/gen_snapshot"
     prod_out = gn_and_build(
         sdk_dir,
         target_os="android",
         mode="product",
         arch=arch,
-        ninja_targets=["feather_dart:feather_dart_aot", "gen_snapshot"],
+        ninja_targets=[
+            "feather_dart:feather_dart_platform",
+            "feather_dart:feather_dart_aot",
+            host_gen_snapshot_target,
+        ],
     )
-    shutil.copy2(prod_out / "libfeather_dart.so", abi_dir / "libfeather_dart.so")
+    copy_built_platform_dill(prod_out)
+    staged_so = abi_dir / "libfeather_dart.so"
+    shutil.copy2(prod_out / "libfeather_dart.so", staged_so)
+    ndk_strip = (
+        sdk_dir
+        / "third_party/android_tools/ndk/toolchains/llvm/prebuilt"
+        / f"{host_os_name()}-x86_64/bin/llvm-strip"
+    )
+    if ndk_strip.exists():
+      run_cmd([str(ndk_strip), "--strip-all", str(staged_so)], sdk_dir)
     for candidate in (
-        prod_out / "clang_x64" / "gen_snapshot",
-        prod_out / "clang_arm64" / "gen_snapshot",
+        prod_out / f"clang_{host_arch()}" / "exe.stripped" / "gen_snapshot",
+        prod_out / f"clang_{host_arch()}" / "gen_snapshot",
         prod_out / "gen_snapshot",
     ):
       if candidate.exists():
@@ -244,20 +242,25 @@ def build_ios(sdk_dir: Path) -> None:
       encoding="utf-8",
   )
 
+  host_gen_snapshot_target = f"clang_{host_arch()}/gen_snapshot"
   device_out = gn_and_build(
       sdk_dir,
       target_os="ios",
       mode="product",
       arch="arm64",
-      ninja_targets=["feather_dart:feather_dart_aot", "gen_snapshot"],
+      ninja_targets=[
+          "feather_dart:feather_dart_platform",
+          "feather_dart:feather_dart_aot",
+          host_gen_snapshot_target,
+      ],
   )
+  copy_built_platform_dill(device_out)
   device_lib = device_out / "obj" / "feather_dart" / "libfeather_dart_aot.a"
 
   compiler_dist = ios_dist / "compilers"
   compiler_dist.mkdir(parents=True, exist_ok=True)
   for candidate in (
-      device_out / "clang_arm64" / "gen_snapshot",
-      device_out / "clang_x64" / "gen_snapshot",
+      device_out / f"clang_{host_arch()}" / "gen_snapshot",
       device_out / "gen_snapshot",
   ):
     if candidate.exists():
@@ -269,19 +272,18 @@ def build_ios(sdk_dir: Path) -> None:
       target_os="ios_simulator",
       mode="product",
       arch="arm64",
-      ninja_targets=["feather_dart:feather_dart_aot", "gen_snapshot"],
+      ninja_targets=["feather_dart:feather_dart_aot", host_gen_snapshot_target],
   )
   sim_x64_out = gn_and_build(
       sdk_dir,
       target_os="ios_simulator",
       mode="product",
       arch="x64",
-      ninja_targets=["feather_dart:feather_dart_aot", "gen_snapshot"],
+      ninja_targets=["feather_dart:feather_dart_aot", host_gen_snapshot_target],
   )
   for arch_tag, out_dir in (("arm64", sim_arm64_out), ("x64", sim_x64_out)):
     for candidate in (
-        out_dir / "clang_arm64" / "gen_snapshot",
-        out_dir / "clang_x64" / "gen_snapshot",
+        out_dir / f"clang_{host_arch()}" / "gen_snapshot",
         out_dir / "gen_snapshot",
     ):
       if candidate.exists():
@@ -360,9 +362,15 @@ def main() -> int:
     )
     return 1
 
-  build_platform_dill(sdk_dir)
-
   if args.target == "platform-only":
+    prod_out = gn_and_build(
+        sdk_dir,
+        target_os="host",
+        mode="product",
+        arch=host_arch(),
+        ninja_targets=["feather_dart:feather_dart_platform"],
+    )
+    copy_built_platform_dill(prod_out)
     return 0
   if args.target in ("host", "all"):
     build_host(sdk_dir)

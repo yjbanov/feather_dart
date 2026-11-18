@@ -1,6 +1,27 @@
-# GN build file mounted into `//third_party/dart-sdk/feather_dart/BUILD.gn` by
-# `tools/fetch_dart_sdk.py`. Builds the stripped FeatherDart VM variants (with
-# zero `//runtime/bin` / `dart:io` / BoringSSL / zlib dependencies).
+# GN build file mounted into `//third_party/sdk/feather_dart/BUILD.gn` by
+# `tools/fetch_dart_sdk.py`. Builds the stripped FeatherDart platform `.dill`
+# and VM variants (with zero `//runtime/bin` / `dart:io` / BoringSSL / zlib).
+
+import("//utils/compile_platform.gni")
+
+compile_platform("feather_dart_platform") {
+  single_root_scheme = "org-dartlang-sdk"
+  single_root_base = rebase_path("//")
+  libraries_specification_uri =
+      "org-dartlang-sdk:///sdk/lib/libraries_feather_dart.json"
+  outputs = [
+    "$root_out_dir/feather_dart_platform_strong.dill",
+    "$root_out_dir/feather_dart_outline_strong.dill",
+  ]
+  args = [
+    "--target=feather_dart",
+    "dart:core",
+    "-Ddart.vm.product=true",
+    "-Ddart.isVM=true",
+    "--nnbd-strong",
+    "--exclude-source",
+  ]
+}
 
 config("feather_dart_public_config") {
   include_dirs = [
@@ -17,10 +38,6 @@ _embedder_sources = [
 ]
 
 if (is_ios) {
-  # iOS App Store requires static AOT linking (no JIT). `complete_static_lib`
-  # bundles all object files from `libdart_aotruntime_product` and the
-  # `feather_dart` C++ embedder into a single standalone `.a` archive ready to
-  # package into `FeatherDartVM.xcframework`.
   static_library("feather_dart_aot") {
     complete_static_lib = true
     sources = _embedder_sources
@@ -29,7 +46,6 @@ if (is_ios) {
     deps = [ "//runtime:libdart_aotruntime_product" ]
   }
 } else {
-  # Production AOT shared library (`libfeather_dart.so` / `libfeather_dart.dylib`).
   shared_library("feather_dart_aot") {
     output_name = "feather_dart"
     sources = _embedder_sources
@@ -51,8 +67,6 @@ if (is_ios) {
     }
   }
 
-  # Development Kernel/JIT shared library (`libfeather_dart_jit.so` / `.dylib`)
-  # for executing `.dill` snapshots without AOT compilation.
   shared_library("feather_dart_jit") {
     output_name = "feather_dart_jit"
     sources = _embedder_sources

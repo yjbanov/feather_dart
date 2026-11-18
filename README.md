@@ -40,7 +40,7 @@ feather_dart/
 │   ├── patches/                        # Minimal Dart SDK integration patch
 │   └── test/                           # C++ unit test & standalone host CLI runner
 ├── tools/
-│   ├── fetch_dart_sdk.py               # Fetches pinned `dart-lang/sdk` into `third_party/dart-sdk` & mounts overlay
+│   ├── fetch_dart_sdk.py               # Fetches pinned `dart-lang/sdk` into `third_party/sdk` & mounts overlay
 │   ├── build_vm.py                     # Builds platform `.dill`, host runtime, Android `.so`s, & iOS `.xcframework`
 │   ├── compile_dart.py                 # Compiles shared Dart packages -> `.dill`, Android AOT `.so`, or iOS `.xcframework`
 │   └── run_host_demo.py                # One-command macOS & Linux end-to-end Kernel + AOT demo runner

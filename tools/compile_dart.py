@@ -32,7 +32,7 @@ import tempfile
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DIST_DIR = REPO_ROOT / "dist"
 DEFAULT_PLATFORM_DILL = DIST_DIR / "sdk" / "feather_dart_platform_strong.dill"
-DEFAULT_SDK_DIR = REPO_ROOT / "third_party" / "dart-sdk"
+DEFAULT_SDK_DIR = REPO_ROOT / "third_party" / "sdk"
 
 ANDROID_ABI_FOR_ARCH = {
     "arm64": "arm64-v8a",
@@ -63,7 +63,9 @@ def ensure_package_config(entrypoint: Path, dart_bin: str) -> Path | None:
     if pkg_cfg.exists():
       return pkg_cfg
     if pubspec.exists():
-      run_cmd([dart_bin, "pub", "get"], cwd=cur)
+      res = subprocess.run([dart_bin, "pub", "get", "--offline"], cwd=str(cur))
+      if res.returncode != 0:
+        run_cmd([dart_bin, "pub", "get"], cwd=cur)
       return pkg_cfg if pkg_cfg.exists() else None
     if cur.parent == cur:
       return None
@@ -100,7 +102,7 @@ def compile_kernel(
   if app_pkg_cfg is not None:
     cmd.append(f"--packages={app_pkg_cfg.resolve()}")
   if aot:
-    cmd.extend(["--aot", "--tfa"])
+    cmd.extend(["--aot", "--tfa", "--no-embed-sources"])
   if product:
     cmd.append("-Ddart.vm.product=true")
   cmd.append(str(entrypoint.resolve()))
