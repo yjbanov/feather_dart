@@ -1,0 +1,40 @@
+# Third-party checkouts & toolchains
+/third_party/
+/.depot_tools/
+
+# Build & distribution outputs
+/dist/
+/out/
+**/build/
+!tools/build*
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.dill
+*.aot
+*.xcframework
+
+# Dart
+.dart_tool/
+pubspec.lock
+
+# Swift / Xcode
+.build/
+.swiftpm/
+DerivedData/
+*.xcodeproj/
+*.xcworkspace/
+
+# Android / Gradle / CMake
+.gradle/
+.cxx/
+local.properties
+captures/
+
+# OS / Editors
+.DS_Store
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,73 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  linux-dart-and-native:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: stable
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Analyze & test feather_dart_runtime
+        working-directory: packages/feather_dart_runtime
+        run: |
+          dart pub get
+          dart analyze --fatal-infos
+          dart test
+
+      - name: Analyze & test shared_logic (including 7-library allowlist & FFI trampolines)
+        working-directory: examples/shared_logic
+        run: |
+          dart pub get
+          dart analyze --fatal-infos
+          dart test
+
+      - name: Verify C11 header, C++17 embedder, JNI bridges, and timer unit test
+        run: |
+          DART_INC="$(dirname "$(dirname "$(readlink -f "$(which dart)")")")/include"
+          gcc -std=c11 -Wall -Wextra -Werror -pedantic -x c -fsyntax-only vm/include/feather_dart.h
+          gcc -std=c11 -Wall -Wextra -Werror -pedantic -fsyntax-only \
+            bindings/swift/Sources/CFeatherDart/include/shim.h \
+            bindings/swift/Sources/CFeatherDart/stub.c
+          g++ -std=c++17 -Wall -Wextra -Werror -fPIC -Ivm/include -Ivm/src -I"$DART_INC" \
+            -c vm/src/feather_dart.cc -o /tmp/feather_dart.o
+          g++ -std=c++17 -Wall -Wextra -Werror -pthread -Ivm/src \
+            vm/src/timer_fallback.cc vm/test/timer_fallback_test.cc -o /tmp/timer_fallback_test
+          /tmp/timer_fallback_test
+          g++ -std=c++17 -Wall -Wextra -Werror -Ivm/include \
+            -c vm/test/host_runner.cc -o /tmp/host_runner.o
+          g++ -std=c++17 -Wall -Wextra -Werror -fPIC -Ivm/include \
+            -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" \
+            -c bindings/kotlin/feather-dart/src/main/cpp/feather_dart_jni.cc -o /tmp/jni.o
+          g++ -std=c++17 -Wall -Wextra -Werror -fPIC -Ivm/include \
+            -I"$JAVA_HOME/include" -I"$JAVA_HOME/include/linux" \
+            -c examples/android_app/app/src/main/cpp/app_bridge_jni.cc -o /tmp/app_jni.o
+
+      - name: Validate Python build CLI scripts
+        run: |
+          python3 tools/fetch_dart_sdk.py --help >/dev/null
+          python3 tools/build_vm.py --help >/dev/null
+          python3 tools/compile_dart.py --help >/dev/null
+          python3 tools/run_host_demo.py --help >/dev/null
+
+  macos-swift-package:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and test FeatherDart Swift package
+        working-directory: bindings/swift
+        run: swift test

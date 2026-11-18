@@ -1,0 +1,72 @@
+# GN build file mounted into `//third_party/dart-sdk/feather_dart/BUILD.gn` by
+# `tools/fetch_dart_sdk.py`. Builds the stripped FeatherDart VM variants (with
+# zero `//runtime/bin` / `dart:io` / BoringSSL / zlib dependencies).
+
+config("feather_dart_public_config") {
+  include_dirs = [
+    "include",
+    "//runtime/include",
+  ]
+}
+
+_embedder_sources = [
+  "include/feather_dart.h",
+  "src/feather_dart.cc",
+  "src/timer_fallback.cc",
+  "src/timer_fallback.h",
+]
+
+if (is_ios) {
+  # iOS App Store requires static AOT linking (no JIT). `complete_static_lib`
+  # bundles all object files from `libdart_aotruntime_product` and the
+  # `feather_dart` C++ embedder into a single standalone `.a` archive ready to
+  # package into `FeatherDartVM.xcframework`.
+  static_library("feather_dart_aot") {
+    complete_static_lib = true
+    sources = _embedder_sources
+    include_dirs = [ "src" ]
+    public_configs = [ ":feather_dart_public_config" ]
+    deps = [ "//runtime:libdart_aotruntime_product" ]
+  }
+} else {
+  # Production AOT shared library (`libfeather_dart.so` / `libfeather_dart.dylib`).
+  shared_library("feather_dart_aot") {
+    output_name = "feather_dart"
+    sources = _embedder_sources
+    include_dirs = [ "src" ]
+    public_configs = [ ":feather_dart_public_config" ]
+    deps = [ "//runtime:libdart_aotruntime_product" ]
+    if (is_mac) {
+      ldflags = [ "-Wl,-install_name,@rpath/libfeather_dart.dylib" ]
+    }
+    if (is_linux || is_android) {
+      ldflags = [
+        "-Wl,--gc-sections",
+        "-Wl,--exclude-libs,ALL",
+      ]
+      libs = [ "dl" ]
+    }
+    if (is_android) {
+      libs += [ "log" ]
+    }
+  }
+
+  # Development Kernel/JIT shared library (`libfeather_dart_jit.so` / `.dylib`)
+  # for executing `.dill` snapshots without AOT compilation.
+  shared_library("feather_dart_jit") {
+    output_name = "feather_dart_jit"
+    sources = _embedder_sources
+    include_dirs = [ "src" ]
+    public_configs = [ ":feather_dart_public_config" ]
+    deps = [ "//runtime:libdart_jit" ]
+    if (is_mac) {
+      ldflags = [ "-Wl,-install_name,@rpath/libfeather_dart_jit.dylib" ]
+    }
+    if (is_linux || is_android) {
+      libs = [ "dl" ]
+    }
+    if (is_android) {
+      libs += [ "log" ]
+    }
+  }
+}

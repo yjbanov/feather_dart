@@ -1,0 +1,12 @@
+name: feather_dart_runtime
+description: >-
+  Zero-dependency Direct FFI helpers (export registration, RAII native arena,
+  and UTF-8/byte-slice codecs) for shared Dart logic running on FeatherDart VM.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: '>=3.3.0-0 <4.0.0'
+
+dev_dependencies:
+  test: ^1.24.0

@@ -1,0 +1,4 @@
+module CFeatherDart {
+  header "shim.h"
+  export *
+}

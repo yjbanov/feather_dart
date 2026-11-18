@@ -1,0 +1,24 @@
+name: FeatherDartDemo
+options:
+  bundleIdPrefix: dev.featherdart
+  deploymentTarget:
+    iOS: "16.0"
+packages:
+  FeatherDart:
+    path: ../../bindings/swift
+targets:
+  FeatherDartDemo:
+    type: application
+    platform: iOS
+    sources:
+      - path: FeatherDartDemo
+    dependencies:
+      - package: FeatherDart
+        product: FeatherDart
+      - framework: ../../dist/ios/AppLogicSnapshot.xcframework
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.featherdart.demo
+        GENERATE_INFOPLIST_FILE: YES
+        SWIFT_VERSION: "5.9"

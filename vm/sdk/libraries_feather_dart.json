@@ -1,0 +1,127 @@
+{
+  "feather_dart": {
+    "libraries": {
+      "async": {
+        "uri": "async/async.dart",
+        "patches": [
+          "_internal/vm/lib/async_patch.dart"
+        ],
+        "supported": true
+      },
+      "collection": {
+        "uri": "collection/collection.dart",
+        "patches": [
+          "_internal/vm_shared/lib/collection_patch.dart",
+          "_internal/vm/lib/hash_factories.dart"
+        ],
+        "supported": true
+      },
+      "convert": {
+        "uri": "convert/convert.dart",
+        "patches": [
+          "_internal/vm/lib/convert_patch.dart"
+        ],
+        "supported": true
+      },
+      "core": {
+        "uri": "core/core.dart",
+        "patches": [
+          "_internal/vm/lib/array_patch.dart",
+          "_internal/vm/lib/core_patch.dart",
+          "_internal/vm_shared/lib/bigint_patch.dart",
+          "_internal/vm/lib/bigint_patch_patch.dart",
+          "_internal/vm_shared/lib/bool_patch.dart",
+          "_internal/vm_shared/lib/date_patch.dart",
+          "_internal/vm_shared/lib/integers_patch.dart",
+          "_internal/vm_shared/lib/map_patch.dart",
+          "_internal/vm_shared/lib/null_patch.dart",
+          "_internal/vm_shared/lib/string_buffer_patch.dart",
+          "_internal/vm_shared/lib/uri_encode_patch.dart"
+        ],
+        "supported": true
+      },
+      "ffi": {
+        "uri": "ffi/ffi.dart",
+        "patches": [
+          "_internal/vm/lib/ffi_patch.dart",
+          "_internal/vm/lib/ffi_allocation_patch.dart",
+          "_internal/vm/lib/ffi_dynamic_library_patch.dart",
+          "_internal/vm/lib/ffi_native_finalizer_patch.dart",
+          "_internal/vm/lib/ffi_native_type_patch.dart",
+          "_internal/vm/lib/ffi_struct_patch.dart"
+        ],
+        "supported": true
+      },
+      "math": {
+        "uri": "math/math.dart",
+        "patches": [
+          "_internal/vm/lib/math_patch.dart"
+        ],
+        "supported": true
+      },
+      "typed_data": {
+        "uri": "typed_data/typed_data.dart",
+        "patches": [
+          "_internal/vm/lib/typed_data_patch.dart"
+        ],
+        "supported": true
+      },
+      "_feather_dart": {
+        "uri": "_feather_dart/feather_dart_bootstrap.dart",
+        "supported": false
+      },
+      "_compact_hash": {
+        "uri": "_internal/vm_shared/lib/compact_hash.dart",
+        "supported": false
+      },
+      "_internal": {
+        "uri": "internal/internal.dart",
+        "patches": [
+          "_internal/vm/lib/internal_patch.dart",
+          "_internal/vm_shared/lib/check_valid_weak_target_patch.dart"
+        ],
+        "supported": false
+      },
+      "_vm": {
+        "uri": "_vm/_vm.dart",
+        "supported": false
+      },
+      "_vmservice": {
+        "uri": "vmservice/vmservice.dart",
+        "supported": false
+      },
+      "concurrent": {
+        "uri": "concurrent/concurrent.dart",
+        "patches": [
+          "_internal/vm/lib/concurrent_patch.dart"
+        ],
+        "supported": false
+      },
+      "developer": {
+        "uri": "developer/developer.dart",
+        "patches": [
+          "_internal/vm/lib/developer.dart"
+        ],
+        "supported": false
+      },
+      "isolate": {
+        "uri": "isolate/isolate.dart",
+        "patches": [
+          "_internal/vm/lib/isolate_patch.dart"
+        ],
+        "supported": false
+      },
+      "mirrors": {
+        "uri": "mirrors/mirrors.dart",
+        "patches": [
+          "_internal/vm/lib/mirrors_patch.dart"
+        ],
+        "supported": false
+      },
+      "nativewrappers": {
+        "uri": "html/dartium/nativewrappers.dart",
+        "supported": false
+      }
+    }
+  }
+}

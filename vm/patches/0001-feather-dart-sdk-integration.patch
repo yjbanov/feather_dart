@@ -1,0 +1,40 @@
+diff --git a/BUILD.gn b/BUILD.gn
+index 1111111..2222222 100644
+--- a/BUILD.gn
++++ b/BUILD.gn
+@@ -45,6 +45,15 @@ group("most") {
+   ]
+ }
+ 
++group("feather_dart_runtime") {
++  deps = [ "//feather_dart:feather_dart_aot" ]
++  if (!is_ios) {
++    deps += [
++      "//feather_dart:feather_dart_jit",
++    ]
++  }
++}
++
+ group("runtime") {
+   import("runtime/runtime_args.gni")
+ 
+diff --git a/pkg/vm/lib/modular/target/install.dart b/pkg/vm/lib/modular/target/install.dart
+index 3333333..4444444 100644
+--- a/pkg/vm/lib/modular/target/install.dart
++++ b/pkg/vm/lib/modular/target/install.dart
+@@ -7,6 +7,7 @@ import 'package:vm/modular/target/dart_runner.dart' show DartRunnerTarget;
+ import 'package:vm/modular/target/flutter.dart' show FlutterTarget;
+ import 'package:vm/modular/target/flutter_runner.dart'
+     show FlutterRunnerTarget;
++import 'package:vm/modular/target/feather_dart.dart' show FeatherDartTarget;
+ import 'package:vm/modular/target/vm.dart' show VmTarget;
+ 
+ bool _installed = false;
+@@ -18,6 +19,7 @@ void installAdditionalTargets() {
+     targets['flutter'] = (TargetFlags flags) => FlutterTarget(flags);
+     targets['flutter_runner'] =
+         (TargetFlags flags) => FlutterRunnerTarget(flags);
++    targets['feather_dart'] = (TargetFlags flags) => FeatherDartTarget(flags);
+     targets['vm'] = (TargetFlags flags) => VmTarget(flags);
+     _installed = true;
+   }
